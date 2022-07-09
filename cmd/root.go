@@ -6,10 +6,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	version string
+)
+
 var rootCmd = &cobra.Command{
-	Use:   "multik8s",
-	Short: "multik8s is an utility Kubernetes",
-	Long:  "multik8s is an utility tool that allow fetching data from multiple kube context at once"}
+	Use:     "multik8s",
+	Short:   "multik8s is an utility Kubernetes",
+	Long:    "multik8s is an utility tool that allow fetching data from multiple kube context at once",
+	Version: version}
 
 func initCmd() {
 	cobra.OnInitialize()

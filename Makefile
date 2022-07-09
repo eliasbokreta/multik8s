@@ -1,5 +1,8 @@
-BIN	= multik8s
-GO	= go
+BIN		= multik8s
+GO		= go
+VERSION = $(shell git describe --tags --abbrev=0)
+
+LDFLAGS = -ldflags="-X github.com/eliasbokreta/multik8s/cmd.version=$(VERSION)"
 
 .PHONY: tidy fmt lint test build clean
 
@@ -25,7 +28,7 @@ test:
 
 build:
 	$(info ▶ compiling program...)
-	$(GO) build
+	$(GO) build $(LDFLAGS)
 
 clean:
 	$(info ▶ removing binary...)

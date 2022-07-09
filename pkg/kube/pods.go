@@ -18,6 +18,8 @@ type Config struct {
 	KubeContext string
 	Namespace   string
 	PodName     string
+	Follow      bool
+	TailLines   int64
 }
 
 type PodInfo struct {
@@ -60,7 +62,8 @@ func PodList(cfg Config, wg *sync.WaitGroup, podlist *[]PodInfo) {
 }
 
 // Read pod logs
-// nolint: cyclop
+// Credits: https://github.com/nwaizer/GetPodLogsEfficiently
+// nolint: cyclop, funlen, gocognit
 func PodLogs(cancelCtx context.Context, cfg Config, wg *sync.WaitGroup) {
 	defer wg.Done()
 
@@ -77,48 +80,61 @@ func PodLogs(cancelCtx context.Context, cfg Config, wg *sync.WaitGroup) {
 	}
 
 	var w sync.WaitGroup
-
 	for pID, pod := range pods.Items {
 		if cfg.PodName != "" {
 			if !strings.Contains(strings.ToLower(pod.Name), strings.ToLower(cfg.PodName)) {
 				continue
 			}
 		}
+		podLogOptions := corev1.PodLogOptions{
+			Follow:     cfg.Follow,
+			TailLines:  &cfg.TailLines,
+			Timestamps: true,
+		}
+		podLogs := clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &podLogOptions)
 
-		w.Add(1)
-		go func(p corev1.Pod, podID int) {
-			defer w.Done()
-			count := int64(100)
-			podLogOptions := corev1.PodLogOptions{
-				Follow:     true,
-				TailLines:  &count,
-				Timestamps: true,
-			}
-			podLogRequest := clientset.CoreV1().Pods(p.Namespace).GetLogs(p.Name, &podLogOptions)
+		stream, err := podLogs.Stream(context.Background())
+		if err != nil {
+			return
+		}
+		defer stream.Close()
 
-			stream, err := podLogRequest.Stream(context.Background())
-			if err != nil {
-				return
-			}
-			defer stream.Close()
-
-			reader := bufio.NewScanner(stream)
-			line := ""
-			for {
-				for reader.Scan() {
-					select {
-					case <-cancelCtx.Done():
-						break
-					default:
-						line = reader.Text()
-						contextColor, podColor := utils.GetColorsFn(cfg.ID)
-						podIDColor := utils.GetColorFn(podID)
-						message := fmt.Sprintf("[%s][%s][%s]%s", contextColor(clientrest.Contexts[clientrest.CurrentContext].Cluster), podColor(p.Name), podIDColor(podID), line)
-						fmt.Println(message)
-					}
+		reader := bufio.NewScanner(stream)
+		line := ""
+		if !cfg.Follow {
+			for reader.Scan() {
+				select {
+				case <-cancelCtx.Done():
+					break
+				default:
+					line = reader.Text()
+					outputLogs(cfg.ID, clientrest.Contexts[clientrest.CurrentContext].Cluster, pID, pod.Name, line)
 				}
 			}
-		}(pod, pID)
+		} else {
+			w.Add(1)
+			go func(p corev1.Pod, podID int) {
+				defer w.Done()
+				for {
+					for reader.Scan() {
+						select {
+						case <-cancelCtx.Done():
+							break
+						default:
+							line = reader.Text()
+							outputLogs(cfg.ID, clientrest.Contexts[clientrest.CurrentContext].Cluster, podID, p.Name, line)
+						}
+					}
+				}
+			}(pod, pID)
+		}
 	}
 	w.Wait()
+}
+
+func outputLogs(contextID int, cluster string, podID int, podName string, line string) {
+	contextColor, podColor := utils.GetColorsFn(contextID)
+	podIDColor := utils.GetColorFn(podID)
+	message := fmt.Sprintf("[%s][%s][%s]%s", contextColor(cluster), podColor(podName), podIDColor(podID), line)
+	fmt.Println(message)
 }

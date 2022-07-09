@@ -16,6 +16,8 @@ type Config struct {
 	SelectedContexts []string
 	Namespace        string
 	PodName          string
+	Follow           bool
+	TailLines        int64
 }
 
 // Create a new MultiK8s config
@@ -23,6 +25,8 @@ func New(config Config) *Config {
 	return &Config{
 		Namespace: config.Namespace,
 		PodName:   config.PodName,
+		Follow:    config.Follow,
+		TailLines: config.TailLines,
 	}
 }
 
@@ -73,6 +77,8 @@ func (c *Config) Run(action string) error {
 			KubeContext: ctx,
 			Namespace:   c.Namespace,
 			PodName:     c.PodName,
+			Follow:      c.Follow,
+			TailLines:   c.TailLines,
 		}
 
 		switch action {

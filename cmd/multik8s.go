@@ -11,6 +11,8 @@ import (
 var (
 	namespace string
 	podName   string
+	follow    bool
+	tailLines int64
 )
 
 var cmdGet = &cobra.Command{
@@ -43,6 +45,8 @@ var cmdGetLogs = &cobra.Command{
 		cfg := multik8s.Config{
 			Namespace: namespace,
 			PodName:   podName,
+			Follow:    follow,
+			TailLines: tailLines,
 		}
 		m := multik8s.New(cfg)
 		if err := m.Run("podLogs"); err != nil {
@@ -57,5 +61,7 @@ func multik8sInit() {
 	rootCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", "default", "Kubernetes namespace")
 	rootCmd.PersistentFlags().StringVarP(&podName, "podname", "p", "", "Kubernetes pod name")
 	cmdGet.AddCommand(cmdGetPods)
+	cmdGetLogs.PersistentFlags().BoolVarP(&follow, "follow", "f", false, "Follow log stream")
+	cmdGetLogs.PersistentFlags().Int64VarP(&tailLines, "tail", "t", 5, "The number of lines from the end of the logs to show")
 	cmdGet.AddCommand(cmdGetLogs)
 }

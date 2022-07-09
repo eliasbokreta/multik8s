@@ -6,7 +6,7 @@
 
 ## Usage
 - Follow logs from pods in a given namespace :
-    - `multik8s get logs [-n namespace] [-p pod]`
+    - `multik8s get logs [-n namespace] [-p pod] [--follow] [--tail nbr]`
 - List pods in a given namespace :
     -  `multik8s get pods [-n namespace] [-p pod]`
 

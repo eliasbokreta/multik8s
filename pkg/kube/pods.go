@@ -108,7 +108,7 @@ func PodLogs(cancelCtx context.Context, cfg Config, wg *sync.WaitGroup) {
 					break
 				default:
 					line = reader.Text()
-					outputLogs(cfg.ID, clientrest.Contexts[clientrest.CurrentContext].Cluster, pID, pod.Name, line)
+					outputLogs(cfg.ID, clientrest.Contexts[clientrest.CurrentContext].Cluster, pID, pod, line)
 				}
 			}
 		} else {
@@ -122,7 +122,7 @@ func PodLogs(cancelCtx context.Context, cfg Config, wg *sync.WaitGroup) {
 							break
 						default:
 							line = reader.Text()
-							outputLogs(cfg.ID, clientrest.Contexts[clientrest.CurrentContext].Cluster, podID, p.Name, line)
+							outputLogs(cfg.ID, clientrest.Contexts[clientrest.CurrentContext].Cluster, podID, p, line)
 						}
 					}
 				}
@@ -132,9 +132,15 @@ func PodLogs(cancelCtx context.Context, cfg Config, wg *sync.WaitGroup) {
 	w.Wait()
 }
 
-func outputLogs(contextID int, cluster string, podID int, podName string, line string) {
+func outputLogs(contextID int, cluster string, podID int, pod corev1.Pod, line string) {
 	contextColor, podColor := utils.GetColorsFn(contextID)
 	podIDColor := utils.GetColorFn(podID)
-	message := fmt.Sprintf("[%s][%s][%s]%s", contextColor(cluster), podColor(podName), podIDColor(podID), line)
+
+	var podIDx string
+	for i := len(pod.GenerateName); i < len(pod.Name); i++ {
+		podIDx += string(pod.Name[i])
+	}
+
+	message := fmt.Sprintf("[%s][%s%s][%s]%s", contextColor(cluster), podColor(pod.GenerateName), podIDColor(podIDx), podIDColor(podID), line)
 	fmt.Println(message)
 }

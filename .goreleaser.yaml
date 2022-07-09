@@ -1,0 +1,17 @@
+project_name: multik8s
+before:
+  hooks:
+    - go mod tidy
+builds:
+  - main: ./main.go
+  - env:
+      - CGO_ENABLED=0
+  - binary: multik8s-{{ .Os }}-{{ .Arch }}
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+snapshot:
+  name_template: "{{ .ShortCommit }}-SNAPSHOT"

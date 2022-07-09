@@ -1,12 +1,16 @@
+---
+
 project_name: multik8s
 before:
   hooks:
     - go mod tidy
 builds:
-  - main: ./main.go
-  - env:
+  - binary: "multik8s"
+    main: ./main.go
+    env:
       - CGO_ENABLED=0
-  - binary: multik8s-{{ .Os }}-{{ .Arch }}
+    ldflags:
+      - -X github.com/eliasbokreta/multik8s/cmd.version={{.Version}}
     goos:
       - linux
       - darwin

@@ -17,13 +17,13 @@ var (
 
 var cmdGet = &cobra.Command{
 	Use:   "get",
-	Short: "Kubernetes related commands",
+	Short: "Get <pods | logs> subcommand",
 }
 
 var cmdGetPods = &cobra.Command{
 	Use:   "pods",
 	Short: "get pods",
-	Long:  "Get pods",
+	Long:  "get pods basic information",
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := multik8s.Config{
 			Namespace: namespace,
@@ -39,8 +39,8 @@ var cmdGetPods = &cobra.Command{
 
 var cmdGetLogs = &cobra.Command{
 	Use:   "logs",
-	Short: "get pod logs",
-	Long:  "Get pod logs",
+	Short: "get logs",
+	Long:  "get pods logs",
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := multik8s.Config{
 			Namespace: namespace,
@@ -56,12 +56,12 @@ var cmdGetLogs = &cobra.Command{
 	},
 }
 
-func multik8sInit() {
+func multik8sCmdInit() {
 	rootCmd.AddCommand(cmdGet)
-	rootCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", "default", "Kubernetes namespace")
-	rootCmd.PersistentFlags().StringVarP(&podName, "podname", "p", "", "Kubernetes pod name")
+	rootCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", "default", "Kubernetes namespace (should be the exact name)")
+	rootCmd.PersistentFlags().StringVarP(&podName, "podname", "p", "", "Kubernetes pod name (works as a wildcard)")
 	cmdGet.AddCommand(cmdGetPods)
-	cmdGetLogs.PersistentFlags().BoolVarP(&follow, "follow", "f", false, "Follow log stream")
+	cmdGetLogs.PersistentFlags().BoolVarP(&follow, "follow", "f", false, "Choose whether or not to follow log stream")
 	cmdGetLogs.PersistentFlags().Int64VarP(&tailLines, "tail", "t", 5, "The number of lines from the end of the logs to show")
 	cmdGet.AddCommand(cmdGetLogs)
 }

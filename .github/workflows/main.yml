@@ -1,4 +1,4 @@
-name: multik8s action
+name: multik8s
 on:
   push:
     paths-ignore:
@@ -27,13 +27,17 @@ jobs:
         with:
           go-version: 1.18
 
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v3
-        with:
-          args: --timeout=3m
+      - name: Check if Go source code is formatted
+        run: make fmt-check
 
-      - name: Run build
+      - name: Run golangci-lint
+        run: make lint
+
+      - name: Run unit tests
+        run: make test
+
+      - name: Build the application
         run: make build
 
-      - name: Run tests
-        run: make test
+      - name: Check if commands documentation is up to date
+        run: make doc-check

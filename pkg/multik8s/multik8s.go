@@ -92,10 +92,10 @@ func (c *Config) Run(action string) error {
 	endGoFunc()
 
 	if action == "podList" {
-		table := utils.GetTableWriter([]string{"Context", "Namespace", "Pod", "Status"})
+		table := utils.GetTableWriter([]string{"Context", "Namespace", "Pod", "Status", "Age"})
 
 		for _, pod := range podList {
-			line := []string{pod.Cluster, pod.Namespace, pod.Podname, pod.Phase}
+			line := []string{pod.Cluster, pod.Namespace, pod.Podname, pod.Phase, pod.Age}
 			table.Append(line)
 		}
 		table.Render()

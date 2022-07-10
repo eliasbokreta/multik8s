@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/eliasbokreta/multik8s/pkg/utils"
 	log "github.com/sirupsen/logrus"
@@ -27,6 +28,7 @@ type PodInfo struct {
 	Namespace string
 	Podname   string
 	Phase     string
+	Age       string
 }
 
 // List all pods on a given namespace
@@ -52,11 +54,13 @@ func PodList(cfg Config, wg *sync.WaitGroup, podlist *[]PodInfo) {
 			}
 		}
 
+		seconds := uint64(time.Since(pod.Status.StartTime.Time).Seconds())
 		*podlist = append(*podlist, PodInfo{
 			Cluster:   clientrest.Contexts[clientrest.CurrentContext].Cluster,
 			Namespace: pod.Namespace,
 			Podname:   pod.Name,
 			Phase:     string(pod.Status.Phase),
+			Age:       utils.AgeFormatter(seconds),
 		})
 	}
 }

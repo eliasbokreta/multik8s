@@ -29,7 +29,7 @@ func GetTableWriter(header []string) *tablewriter.Table {
 	table.SetRowSeparator("")
 	table.SetHeaderLine(false)
 	table.SetBorder(false)
-	table.SetTablePadding("\t")
+	table.SetTablePadding("\t\t")
 	table.SetNoWhiteSpace(true)
 
 	return table

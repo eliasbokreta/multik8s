@@ -3,7 +3,6 @@ package kube
 import (
 	"bufio"
 	"context"
-	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -24,20 +23,34 @@ type Config struct {
 }
 
 type PodInfo struct {
-	Cluster   string
-	Namespace string
-	Podname   string
-	Phase     string
-	Age       string
+	ContextID       int
+	Cluster         string
+	Namespace       string
+	Podname         string
+	PodGenerateName string
+	PodID           int
+	Phase           string
+	Age             string
 }
 
 // List all pods on a given namespace
 func PodList(cfg Config, wg *sync.WaitGroup, podlist *[]PodInfo) {
 	defer wg.Done()
 
-	clientset, clientrest, err := GetKubernetesClients(cfg.KubeContext)
+	tmpKubeconfigPath, err := GenerateTemporaryKubeconfig(cfg.KubeContext)
 	if err != nil {
-		log.Errorf("could not get kubernetes clients: %v", err)
+		log.Errorf("could not generate temporary kubeconfig: %v", err)
+		return
+	}
+
+	clientset, err := GetClientSet(tmpKubeconfigPath)
+	if err != nil {
+		log.Errorf("could not get clientset: %v", err)
+	}
+
+	apiconfig, err := GetRawAPIConfig(tmpKubeconfigPath)
+	if err != nil {
+		log.Errorf("could not get raw API config: %v", err)
 		return
 	}
 
@@ -56,11 +69,13 @@ func PodList(cfg Config, wg *sync.WaitGroup, podlist *[]PodInfo) {
 
 		seconds := uint64(time.Since(pod.Status.StartTime.Time).Seconds())
 		*podlist = append(*podlist, PodInfo{
-			Cluster:   clientrest.Contexts[clientrest.CurrentContext].Cluster,
-			Namespace: pod.Namespace,
-			Podname:   pod.Name,
-			Phase:     string(pod.Status.Phase),
-			Age:       utils.AgeFormatter(seconds),
+			Cluster:         apiconfig.Contexts[apiconfig.CurrentContext].Cluster,
+			Namespace:       pod.Namespace,
+			Podname:         pod.Name,
+			PodGenerateName: pod.GenerateName,
+			Phase:           string(pod.Status.Phase),
+			Age:             utils.AgeFormatter(seconds),
+			ContextID:       cfg.ID,
 		})
 	}
 }
@@ -71,9 +86,20 @@ func PodList(cfg Config, wg *sync.WaitGroup, podlist *[]PodInfo) {
 func PodLogs(cancelCtx context.Context, cfg Config, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	clientset, clientrest, err := GetKubernetesClients(cfg.KubeContext)
+	tmpKubeconfigPath, err := GenerateTemporaryKubeconfig(cfg.KubeContext)
 	if err != nil {
-		log.Errorf("could not get kubernetes clients: %v", err)
+		log.Errorf("could not generate temporary kubeconfig: %v", err)
+		return
+	}
+
+	clientset, err := GetClientSet(tmpKubeconfigPath)
+	if err != nil {
+		log.Errorf("could not get clientset: %v", err)
+	}
+
+	apiconfig, err := GetRawAPIConfig(tmpKubeconfigPath)
+	if err != nil {
+		log.Errorf("could not get raw API config: %v", err)
 		return
 	}
 
@@ -112,7 +138,7 @@ func PodLogs(cancelCtx context.Context, cfg Config, wg *sync.WaitGroup) {
 					break
 				default:
 					line = reader.Text()
-					outputLogs(cfg.ID, clientrest.Contexts[clientrest.CurrentContext].Cluster, pID, pod, line)
+					outputLogs(cfg.ID, apiconfig.Contexts[apiconfig.CurrentContext].Cluster, pID, pod, line)
 				}
 			}
 		} else {
@@ -126,7 +152,7 @@ func PodLogs(cancelCtx context.Context, cfg Config, wg *sync.WaitGroup) {
 							break
 						default:
 							line = reader.Text()
-							outputLogs(cfg.ID, clientrest.Contexts[clientrest.CurrentContext].Cluster, podID, p, line)
+							outputLogs(cfg.ID, apiconfig.Contexts[apiconfig.CurrentContext].Cluster, podID, p, line)
 						}
 					}
 				}
@@ -134,17 +160,4 @@ func PodLogs(cancelCtx context.Context, cfg Config, wg *sync.WaitGroup) {
 		}
 	}
 	w.Wait()
-}
-
-func outputLogs(contextID int, cluster string, podID int, pod corev1.Pod, line string) {
-	contextColor, podColor := utils.GetColorsFn(contextID)
-	podIDColor := utils.GetColorFn(podID)
-
-	var podIDx string
-	for i := len(pod.GenerateName); i < len(pod.Name); i++ {
-		podIDx += string(pod.Name[i])
-	}
-
-	message := fmt.Sprintf("[%s][%s%s][%s]%s", contextColor(cluster), podColor(pod.GenerateName), podIDColor(podIDx), podIDColor(podID), line)
-	fmt.Println(message)
 }

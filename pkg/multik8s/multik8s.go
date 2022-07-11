@@ -7,7 +7,6 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/eliasbokreta/multik8s/pkg/kube"
-	"github.com/eliasbokreta/multik8s/pkg/utils"
 	log "github.com/sirupsen/logrus"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/azure" // Import needed for Azure authentication if using AKS
 )
@@ -34,12 +33,12 @@ func New(config Config) *Config {
 func (c *Config) SelectContexts() error {
 	promptValues := []string{}
 
-	rawConfig, err := kube.GetRawConfig()
+	apiconfig, err := kube.GetRawAPIConfig("")
 	if err != nil {
-		return fmt.Errorf("could not get raw config: %w", err)
+		return fmt.Errorf("could not get raw API config: %w", err)
 	}
 
-	for cluster := range rawConfig.Contexts {
+	for cluster := range apiconfig.Contexts {
 		promptValues = append(promptValues, cluster)
 	}
 
@@ -92,13 +91,7 @@ func (c *Config) Run(action string) error {
 	endGoFunc()
 
 	if action == "podList" {
-		table := utils.GetTableWriter([]string{"Context", "Namespace", "Pod", "Status", "Age"})
-
-		for _, pod := range podList {
-			line := []string{pod.Cluster, pod.Namespace, pod.Podname, pod.Phase, pod.Age}
-			table.Append(line)
-		}
-		table.Render()
+		kube.OutputPods(podList, []string{"Context", "Namespace", "Pod", "Status", "Age"})
 	}
 
 	return nil

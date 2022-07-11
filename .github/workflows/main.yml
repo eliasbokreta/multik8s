@@ -2,18 +2,18 @@ name: multik8s
 on:
   push:
     paths-ignore:
-      - '**/README.md'
+      - '**.md'
       - '**/.gitignore'
       - '**/LICENSE'
-      - '**/Makefile'
     tags:
       - v*
     branches:
       - master
   pull_request:
-permissions:
-  contents: read
-
+    paths-ignore:
+      - '**.md'
+      - '**/.gitignore'
+      - '**/LICENSE'
 jobs:
   build:
     name: CI
@@ -21,23 +21,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-
       - name: Setup Golang
         uses: actions/setup-go@v3
         with:
           go-version: 1.18
-
       - name: Check if Go source code is formatted
         run: make fmt-check
-
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v3
-
       - name: Run unit tests
         run: make test
-
       - name: Build the application
         run: make build
-
       - name: Check if commands documentation is up to date
         run: make doc-check

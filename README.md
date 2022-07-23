@@ -25,9 +25,6 @@
       <a href="#usage">Usage</a>
     </li>
     <li>
-      <a href="#limitations">Limitations</a>
-    </li>
-    <li>
       <a href="#setup">Setup</a>
     </li>
   </ol>
@@ -38,21 +35,42 @@
 
 ## About The Project
 
-`multik8s` is a tool to access pod information across multiple Kubernetes contexts at once.
+`multik8s` is a tool to access pod information across multiple Kubernetes contexts at once.\
+It allows to **tail logs** from several pods in several contexts and also to **list pods**.
 
 
 ## Usage
-- Follow logs from pods in a given namespace :
-    - `multik8s get logs [-n namespace] [-p pod] [--follow] [--tail nbr]`
-- List pods in a given namespace :
-    -  `multik8s get pods [-n namespace] [-p pod]`
+Tail logs from pods :
+```
+multik8s get logs [-n namespace] [-p podName] [--follow] [--tail nbr]
 
+-n, --namespace string   Kubernetes namespace (should be the exact name) (default "default")
+-p, --podname string     Kubernetes pod name (works as a wildcard)
+-f, --follow             Choose whether or not to follow log stream
+-t, --tail int           The number of lines from the end of the logs to show (default 5)
+```
 
-## Limitations
-Currently, the namespace should be the same on all targeted clusters.
+List pods :
+```
+multik8s get pods [-n namespace] [-p podName]
 
+-n, --namespace string   Kubernetes namespace (should be the exact name) (default "default")
+-p, --podname string     Kubernetes pod name (works as a wildcard)
+```
 
 ## Setup
-Tested on ARM64 using Go 1.18.3.
+- ### Build locally :
 
-`make build`
+```
+make build
+```
+
+- ### Install the latest version :
+  - Download the latest tar released from [Github](https://github.com/eliasbokreta/multik8s/releases)
+  - Extract the archive
+  - Move the binary to the location of your choice
+
+- ### Update the binary to the latest version :
+```
+multik8s update
+```

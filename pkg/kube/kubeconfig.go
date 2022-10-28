@@ -2,7 +2,6 @@ package kube
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"k8s.io/client-go/tools/clientcmd"
@@ -10,7 +9,7 @@ import (
 
 // Generate a temporary kubeconfig file
 func GenerateTemporaryKubeconfig(context string) (string, error) {
-	tmpDir, err := ioutil.TempDir(os.TempDir(), "multik8s")
+	tmpDir, err := os.MkdirTemp(os.TempDir(), "multik8s")
 	if err != nil {
 		return "", fmt.Errorf("could not create tempfile")
 	}

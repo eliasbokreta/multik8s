@@ -2,7 +2,9 @@ package utils
 
 import "fmt"
 
-// nolint: gocritic, nestif
+// Format seconds to a string in the following formats '1d1h'/'1m1s'
+//
+//nolint:gocritic,nestif
 func AgeFormatter(seconds uint64) string {
 	age := ""
 	days := seconds / 86400

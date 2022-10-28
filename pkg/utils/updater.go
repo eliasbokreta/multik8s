@@ -19,7 +19,7 @@ func SelfUpdate(version string) error {
 		return fmt.Errorf("error occurred while detecting version: %w", err)
 	}
 
-	v := semver.MustParse(version) // nolint: ifshort
+	v := semver.MustParse(version) //nolint:ifshort
 	if !found || latest.Version.LTE(v) {
 		log.Info("Current version is the latest")
 		return nil

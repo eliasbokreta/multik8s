@@ -83,7 +83,8 @@ func PodList(cfg Config, wg *sync.WaitGroup, podlist *[]PodInfo) {
 
 // Read pod logs
 // Credits: https://github.com/nwaizer/GetPodLogsEfficiently
-// nolint: cyclop, funlen, gocognit
+//
+//nolint:cyclop,funlen
 func PodLogs(cancelCtx context.Context, cfg Config, wg *sync.WaitGroup) {
 	defer wg.Done()
 

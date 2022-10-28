@@ -46,6 +46,7 @@ func PodList(cfg Config, wg *sync.WaitGroup, podlist *[]PodInfo) {
 	clientset, err := GetClientSet(tmpKubeconfigPath)
 	if err != nil {
 		log.Errorf("could not get clientset: %v", err)
+		return
 	}
 
 	apiconfig, err := GetRawAPIConfig(tmpKubeconfigPath)
@@ -95,6 +96,7 @@ func PodLogs(cancelCtx context.Context, cfg Config, wg *sync.WaitGroup) {
 	clientset, err := GetClientSet(tmpKubeconfigPath)
 	if err != nil {
 		log.Errorf("could not get clientset: %v", err)
+		return
 	}
 
 	apiconfig, err := GetRawAPIConfig(tmpKubeconfigPath)
@@ -121,43 +123,39 @@ func PodLogs(cancelCtx context.Context, cfg Config, wg *sync.WaitGroup) {
 			TailLines:  &cfg.TailLines,
 			Timestamps: true,
 		}
-		podLogs := clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &podLogOptions)
 
-		stream, err := podLogs.Stream(context.Background())
-		if err != nil {
-			return
-		}
-		defer stream.Close()
-
-		reader := bufio.NewScanner(stream)
-		line := ""
 		if !cfg.Follow {
-			for reader.Scan() {
-				select {
-				case <-cancelCtx.Done():
-					break
-				default:
-					line = reader.Text()
-					outputLogs(cfg.ID, apiconfig.Contexts[apiconfig.CurrentContext].Cluster, pID, pod, line)
-				}
+			podLogs := clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &podLogOptions)
+
+			stream, err := podLogs.Stream(context.Background())
+			if err != nil {
+				return
 			}
-		} else {
-			w.Add(1)
-			go func(p corev1.Pod, podID int) {
-				defer w.Done()
-				for {
-					for reader.Scan() {
-						select {
-						case <-cancelCtx.Done():
-							break
-						default:
-							line = reader.Text()
-							outputLogs(cfg.ID, apiconfig.Contexts[apiconfig.CurrentContext].Cluster, podID, p, line)
-						}
-					}
-				}
-			}(pod, pID)
+			defer stream.Close()
+
+			reader := bufio.NewScanner(stream)
+			for reader.Scan() {
+				outputLogs(cfg.ID, apiconfig.Contexts[apiconfig.CurrentContext].Cluster, pID, pod, reader.Text())
+			}
+			continue
 		}
+
+		w.Add(1)
+		go func(p corev1.Pod, podID int) {
+			defer w.Done()
+			podLogs := clientset.CoreV1().Pods(p.Namespace).GetLogs(p.Name, &podLogOptions)
+
+			stream, err := podLogs.Stream(context.Background())
+			if err != nil {
+				return
+			}
+			defer stream.Close()
+
+			reader := bufio.NewScanner(stream)
+			for reader.Scan() {
+				outputLogs(cfg.ID, apiconfig.Contexts[apiconfig.CurrentContext].Cluster, podID, p, reader.Text())
+			}
+		}(pod, pID)
 	}
 	w.Wait()
 }
